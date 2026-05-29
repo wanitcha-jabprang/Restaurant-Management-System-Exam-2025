@@ -168,12 +168,8 @@ jobs:
           echo "🔍 Checking backend health..."
           
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
-          if [ -z "$TARGET_URL" ]; then
-            TARGET_URL="${{ secrets.BACKEND_URL }}"
-          fi
-          if [ -z "$TARGET_URL" ]; then
-            TARGET_URL="https://rms-backend-47sv.onrender.com"
-          fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           for i in {1..10}; do
             HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
@@ -326,7 +322,7 @@ jobs:
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo "🔍 Testing: GET $TARGET_URL/api/health"
           RESPONSE=$(curl --silent --fail "$TARGET_URL/api/health")
@@ -343,8 +339,8 @@ jobs:
         id: smoke_login
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; presidential then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo "🔍 Testing: POST $TARGET_URL/api/auth/login"
           RESPONSE=$(curl --silent --fail \
@@ -366,7 +362,7 @@ jobs:
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo "🔍 Testing: POST $TARGET_URL/api/orders"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
@@ -387,7 +383,7 @@ jobs:
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo "🔍 Testing: Payment endpoint exists and is reachable"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
@@ -406,7 +402,6 @@ jobs:
       - name: "[ST-05] Frontend Accessible (Vercel)"
         id: smoke_frontend
         run: |
-          # 💡 [แก้ไขสำเร็จ] วิ่งตรงไปยัง Vercel URL ที่ส่งมา ล็อกเป้าหมายแม่นยำ
           TARGET_FRONTEND="https://restaurant-management-system-exam-2025-g1p8fekqo.vercel.app"
           
           echo "🔍 Testing: GET $TARGET_FRONTEND"
@@ -425,7 +420,7 @@ jobs:
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo "🔍 Testing: Protected endpoint must reject unauthenticated request"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
@@ -443,7 +438,7 @@ jobs:
         run: |
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
-          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-um90.onrender.com"; fi # 👈 อัปเดต URL ใหม่ตรงนี้
           
           echo ""
           echo "════════════════════════════════════════"
