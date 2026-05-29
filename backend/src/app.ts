@@ -12,7 +12,20 @@ import reportRoutes  from './routes/reports'
 
 const app = express()
 
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*' }))
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+  : ['https://restaurant-management-s-git-26e209-wanitcha-jabprang-s-projects.vercel.app', 'http://localhost:5173', 'http://localhost:3000']
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('CORS not allowed'), false)
+    }
+  },
+  credentials: true,
+}))
 app.use(express.json())
 
 app.use('/api/auth',     authRoutes)
