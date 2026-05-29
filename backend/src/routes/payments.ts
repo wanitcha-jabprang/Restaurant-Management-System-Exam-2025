@@ -6,49 +6,73 @@ import { authenticate, requireRole } from '../middleware/auth'
 const router = Router()
 
 // POST /api/payments
-// ⚠️ BUG-001 [Critical]: No validation that amountPaid >= totalAmount
-// Negative change is stored and returned when customer underpays
+// 🛠️ FIXED [BUG-001]: Added robust input validation and fixed control flow returns
 router.post('/', authenticate, requireRole('admin', 'cashier'), async (req, res) => {
   try {
     const { orderId, amountPaid, method } = req.body as {
       orderId?: number; amountPaid?: number; method?: 'cash' | 'card' | 'qr'
     }
-    if (!orderId || amountPaid === undefined) {
-      res.status(400).json({ error: 'orderId and amountPaid required' }); return
+
+    // 1. ตรวจสอบว่าส่งข้อมูลที่จำเป็นมาครบถ้วนและถูกต้องหรือไม่
+    if (!orderId || amountPaid === undefined || amountPaid === null) {
+      return res.status(400).json({ error: 'orderId and amountPaid required' })
     }
 
+    // 2. ป้องกันกรณีส่งค่าติดลบ หรือไม่ใช่ตัวเลขเข้ามา
+    const paid = Number(amountPaid)
+    if (isNaN(paid) || paid < 0) {
+      return res.status(400).json({ error: 'amountPaid must be a valid positive number' })
+    }
+
+    // 3. ค้นหาข้อมูลออเดอร์
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { items: true },
     })
-    if (!order) { res.status(404).json({ error: 'Order not found' }); return }
+
+    if (!order) { 
+      return res.status(404).json({ error: 'Order not found' }) 
+    }
     if (order.status !== 'confirmed') {
-      res.status(400).json({ error: 'Order must be confirmed before payment' }); return
+      return res.status(400).json({ error: 'Order must be confirmed before payment' })
     }
     if (!order.items.length) {
-      res.status(400).json({ error: 'Order has no items' }); return
+      return res.status(400).json({ error: 'Order has no items' })
     }
 
     const totalAmount = Number(order.totalAmount)
-    const paid = Number(amountPaid)
 
-    // Validate sufficient payment
+    // 4. [จุดสำคัญ] ตรวจสอบว่าเงินที่จ่ายมา น้อยกว่ายอดรวมที่ต้องจ่ายหรือไม่
     if (paid < totalAmount) {
-      res.status(400).json({ error: 'Insufficient payment amount', required: totalAmount, provided: paid }); return
+      return res.status(400).json({ 
+        error: 'Insufficient payment amount', 
+        required: totalAmount, 
+        provided: paid 
+      })
     }
+
+    // 5. คำนวณเงินทอน (ค่าจะเป็นบวกหรือศูนย์เสมอ ไม่มีทางติดลบ)
     const change = paid - totalAmount
 
+    // 6. บันทึกธุรกรรมลงฐานข้อมูลแบบพร้อม ๆ กัน (Transaction)
     const [payment] = await prisma.$transaction([
       prisma.payment.create({
-        data: { orderId, cashierId: req.user!.id, totalAmount, amountPaid: paid, change, method: method ?? 'cash' },
+        data: { 
+          orderId, 
+          cashierId: req.user!.id, 
+          totalAmount, 
+          amountPaid: paid, 
+          change, 
+          method: method ?? 'cash' 
+        },
       }),
       prisma.order.update({ where: { id: orderId }, data: { status: 'paid' } }),
       prisma.restaurantTable.update({ where: { id: order.tableId }, data: { status: 'available' } }),
     ])
 
-    res.status(201).json({ payment, change, message: 'Payment processed successfully' })
+    return res.status(201).json({ payment, change, message: 'Payment processed successfully' })
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    return res.status(500).json({ error: (err as Error).message })
   }
 })
 
@@ -58,10 +82,12 @@ router.get('/:orderId', authenticate, async (req, res) => {
     const payment = await prisma.payment.findUnique({
       where: { orderId: Number(req.params.orderId) },
     })
-    if (!payment) { res.status(404).json({ error: 'Payment not found' }); return }
-    res.json(payment)
+    if (!payment) { 
+      return res.status(404).json({ error: 'Payment not found' }) 
+    }
+    return res.json(payment)
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    return res.status(500).json({ error: (err as Error).message })
   }
 })
 

@@ -423,7 +423,7 @@ newman run tests/postman/RMS-[68030251]-TestSuite.json \
 |--------|-------|
 | Newman Collection JSON อยู่ที่ `tests/postman/` ใน Repository | ✅ |
 | `.github/workflows/cicd.yml` มี step ติดตั้งและรัน Newman | ✅ |
-| GitHub Actions Pipeline รันสำเร็จ (สีเขียว) | ☐ |
+| GitHub Actions Pipeline รันสำเร็จ (สีเขียว) | ✅ |
 | Newman Pass Rate บันทึกอยู่ใน Pipeline log | ☐ |
 
 **✏️ Newman Pass Rate จาก CI/CD:** ___ / ___ (___%)
