@@ -113,7 +113,7 @@
 - [✅] Repository ถูก Clone และรัน Backend + Frontend ได้
 - [✅] Database เชื่อมต่อ Neon.tech สำเร็จ
 - [✅] `/api/health` ตอบกลับ `{"status":"ok"}`
-- [ ] Postman Collection พร้อมสำหรับ Newman
+- [✅] Postman Collection พร้อมสำหรับ Newman
 
 #### Exit Criteria (เงื่อนไขผ่านการทดสอบ)
 **✏️ ระบุเงื่อนไขที่ถือว่าผ่านการทดสอบและพร้อม Deploy**
@@ -424,13 +424,13 @@ newman run tests/postman/RMS-[68030251]-TestSuite.json \
 | Newman Collection JSON อยู่ที่ `tests/postman/` ใน Repository | ✅ |
 | `.github/workflows/cicd.yml` มี step ติดตั้งและรัน Newman | ✅ |
 | GitHub Actions Pipeline รันสำเร็จ (สีเขียว) | ✅ |
-| Newman Pass Rate บันทึกอยู่ใน Pipeline log | ☐ |
+| Newman Pass Rate บันทึกอยู่ใน Pipeline log | ✅ |
 
-**✏️ Newman Pass Rate จาก CI/CD:** ___ / ___ (___%)
+**✏️ Newman Pass Rate จาก CI/CD:** 20 / 20 (100%)
 
 **รูปที่ 4 — GitHub Actions Pipeline สำเร็จ (แสดง Newman step และ Pass Rate)**
 
-`![CI Pipeline Newman](./tests/reports/ci-pipeline-newman.png)`
+![CI Pipeline Newman](./tests/reports/ci-pipeline-newman.png)
 
 ---
 
@@ -448,21 +448,21 @@ cd backend && npm audit --audit-level=moderate
 
 | Severity | จำนวน |
 |----------|-------|
-| Critical | |
-| High | |
-| Medium | |
-| Low | |
-| **รวม** | |
+| Critical |0|
+| High |0|
+| Medium |0|
+| Low |0|
+| **รวม** |0|
 
 **✏️ กรอกรายละเอียด Dependency ที่มีช่องโหว่ระดับ High ขึ้นไป (ถ้าไม่มีให้ระบุ "ไม่พบช่องโหว่")**
 
 | Package | CVE ID | Severity | เวอร์ชันที่มีปัญหา | เวอร์ชันที่ปลอดภัย | สถานะการแก้ไข |
 |---------|--------|----------|--------------------|--------------------|--------------| 
-| | | | | | |
+|**"ไม่พบช่องโหว่"**| | | | | |
 
 **รูปที่ 5 — ผล npm audit Backend**
 
-`![Backend npm audit](./tests/reports/npm-audit-backend.png)`
+![Backend npm audit](./tests/reports/npm-audit-backend.png)
 
 ---
 
@@ -476,10 +476,10 @@ cd frontend && npm audit --audit-level=moderate
 
 | Severity | จำนวน |
 |----------|-------|
-| Critical | |
-| High | |
-| Medium | |
-| Low | |
+| Critical |0|
+| High |1|
+| Medium |2|
+| Low |0|
 | **รวม** | |
 
 **รูปที่ 6 — ผล npm audit Frontend**
@@ -502,63 +502,64 @@ cd frontend && npm audit --audit-level=moderate
 
 ---
 
-### BUG-001: [✏️ ชื่อ Bug สั้น ๆ อธิบายปัญหา]
+### BUG-001: ระบบยอมรับการชำระเงินที่ยอดเงินไม่ครบและบันทึกเงินทอนติดลบ
 
 | รายการ | ค่า |
 |--------|-----|
-| **Severity** | (เลือก: Critical / High / Medium / Low) |
-| **Priority** | (เลือก: P1 / P2 / P3) |
-| **Feature** | |
-| **Status** | (เลือก: Open / Fixed) |
+| **Severity** | **Critical** (เนื่องจากกระทบต่อรายได้และการบัญชีของร้านโดยตรง) |
+| **Priority** | **P1** (ต้องแก้ไขทันทีก่อนขึ้นระบบจริง) |
+| **Feature** | Payment Processing (ระบบจัดการชำระเงิน) |
+| **Status** | **Open** |
 
 #### Steps to Reproduce
-**✏️ ระบุขั้นตอนที่ทำให้เกิด Bug ซ้ำได้ชัดเจน**
-1. 
-2. 
-3. 
+1. พนักงานแคชเชียร์ทำการเรียกออเดอร์ที่มีสถานะ `confirmed` เพื่อชำระเงิน (สมมติยอดรวม `totalAmount = 150` บาท)
+2. พนักงานส่งคำขอชำระเงินผ่าน `POST /api/payments` โดยระบุจำนวนเงินที่จ่ายน้อยกว่ายอดจริงในฐานข้อมูล (เช่น ส่งค่า `amountPaid = 100` บาท)
+3. ตรวจสอบผลลัพธ์ที่ระบบตอบกลับมาและการบันทึกข้อมูลในระบบฐานข้อมูล
 
 #### Expected Result
-> ✏️ 
+> ระบบต้องปฏิเสธการชำระเงินทันที โดยส่งตอบกลับเป็น `HTTP 400 Bad Request` พร้อมข้อความแจ้งเตือนว่าจำนวนเงินไม่เพียงพอ (`Insufficient payment amount`) และต้องไม่มีการบันทึกธุรกรรมใด ๆ ลงฐานข้อมูล รวมถึงไม่มีการเปลี่ยนสถานะของออเดอร์และโต๊ะอาหาร
 
 #### Actual Result
-> ✏️ 
+> ระบบอนุญาตให้ทำรายการผ่านชำระเงินสำเร็จ โดยส่งตอบกลับเป็น `HTTP 201 Created` แถมยังนำผลลัพธ์จากการคำนวณที่ผิดพลาดไปบันทึกลงในฐานข้อมูล (เช่น บันทึกค่าเงินทอน `change = -159` บาท) พร้อมทั้งเปลี่ยนสถานะออเดอร์เป็น `paid` และปล่อยโต๊ะให้ว่าง ทั้ง ๆ ที่ร้านค้ายังได้รับเงินไม่ครบตามจริง
 
 #### Evidence
 
-`![BUG-001](./tests/reports/bug-001.png)`
+![BUG-001](./tests/reports/bug-001.png)
 
 #### Business Impact
-> ✏️ ระบุผลกระทบต่อการดำเนินธุรกิจของร้านอาหาร
+> 1. **สูญเสียรายได้โดยตรง:** ร้านอาหารจะขาดทุนเนื่องจากระบบยอมเปิดโต๊ะใหม่และปิดออเดอร์เก่า ทั้งที่ลูกค้ายังจ่ายเงินไม่ครบตามยอดบิลจริง
+> 2. **ระบบบัญชีผิดพลาดร้ายแรง:** การบันทึกค่าเงินทอนเป็นตัวเลขติดลบในฐานข้อมูล ทำให้รายงานยอดขายประจำวัน รายงานภาษี และระบบบัญชีภายในของร้านคลาดเคลื่อน ไม่สามารถนำไปใช้งานต่อได้
+> 3. **ช่องโหว่การทุจริต:** พนักงานหรือผู้ใช้งานระบบสามารถจงใจระบุยอดเงินที่จ่ายต่ำกว่าความเป็นจริงเพื่อขโมยเงินหรือปิดออเดอร์ให้คนรู้จักได้โดยไม่มีระบบคอยตรวจสอบ
 
 ---
 
-### BUG-002: [✏️ ชื่อ Bug สั้น ๆ อธิบายปัญหา]
+### BUG-002: ระบบยอมรับการเปิดออเดอร์ซ้ำซ้อนบนโต๊ะอาหารเดียวกัน (Double Booking)
 
 | รายการ | ค่า |
 |--------|-----|
-| **Severity** | (เลือก: Critical / High / Medium / Low) |
-| **Priority** | (เลือก: P1 / P2 / P3) |
-| **Feature** | |
-| **Status** | (เลือก: Open / Fixed) |
+| **Severity** | **High** (ส่งผลกระทบต่อความถูกต้องของข้อมูลและกระบวนการทำงานในร้าน) |
+| **Priority** | **P1** (ต้องเร่งแก้ไขเพื่อป้องกันความสับสนของพนักงานหน้างาน) |
+| **Feature** | Order Management (ระบบจัดการคำสั่งซื้อ) |
+| **Status** | **Open** |
 
 #### Steps to Reproduce
-**✏️ ระบุขั้นตอนที่ทำให้เกิด Bug ซ้ำได้ชัดเจน**
-1. 
-2. 
-3. 
+1. พนักงานทำการเปิดออเดอร์ใหม่ผ่าน `POST /api/orders` ให้กับโต๊ะหมายเลขหนึ่ง (เช่น `tableId: 2`) โดยสถานะของออเดอร์นั้นจะถูกบันทึกเป็น `open`
+2. พนักงานอีกคน (หรือพนักงานคนเดิม) ส่งคำขอเปิดออเดอร์ใหม่ไปที่ `POST /api/orders` ซ้ำอีกครั้ง โดยระบุเป็นโต๊ะเดิม (`tableId: 2`) ในขณะที่ออเดอร์แรกยังคงค้างอยู่ที่สถานะ `open` (ยังไม่ได้ปิดบิลชำระเงินหรือยกเลิก)
+3. ตรวจสอบผลลัพธ์การตอบกลับจาก API และจำนวนออเดอร์ที่ผูกอยู่กับโต๊ะนั้นในฐานข้อมูล
 
 #### Expected Result
-> ✏️ 
+> ระบบต้องตรวจสอบสถานะออเดอร์ค้างเก่าบนโต๊ะนั้นก่อน หากพบว่าโต๊ะดังกล่าวมีออเดอร์ที่สถานะยังเป็น `open` ค้างอยู่ ระบบต้องปฏิเสธการสร้างออเดอร์ใหม่ทันที โดยส่งตอบกลับเป็น `HTTP 409 Conflict` พร้อมข้อความแจ้งเตือน เช่น `Table already has an open order` เพื่อบังคับให้จัดการออเดอร์เดิมให้เสร็จสิ้นก่อน
 
 #### Actual Result
-> ✏️ 
+> ระบบอนุญาตให้สร้างออเดอร์ใหม่ซ้ำซ้อนบนโต๊ะเดียวกันได้สำเร็จ โดยส่งตอบกลับเป็น `HTTP 201 Created` ทำให้ในระบบฐานข้อมูลมีออเดอร์ที่มีสถานะ `open` พร้อมกันมากกว่า 1 ออเดอร์ในโต๊ะเดียวกัน ซึ่งขัดกับหลักความเป็นจริงในร้านอาหาร
 
 #### Evidence
-
-`![BUG-002](./tests/reports/bug-002.png)`
+![BUG-002](./tests/reports/bug-002.png)
 
 #### Business Impact
-> ✏️ ระบุผลกระทบต่อการดำเนินธุรกิจของร้านอาหาร
+> 1. **ความสับสนในการให้บริการของพนักงาน:** พนักงานเสิร์ฟและพนักงานในครัวจะไม่สามารถแยกแยะได้ว่ารายการอาหารใหม่ที่ถูกสั่งเข้ามา ควรจะเข้าไปรวมอยู่ในบิลใบไหน ทำให้เกิดความผิดพลาดในการเสิร์ฟและจัดเตรียมอาหาร
+> 2. **บิลค่าอาหารคลาดเคลื่อนและเกิดการโต้เถียงกับลูกค้า:** เมื่อถึงขั้นตอนชำระเงิน ระบบจะดึงยอดเงินมาไม่ครบ หรือพนักงานอาจจะเลือกปิดบิลผิดใบ ส่งผลให้เรียกเก็บเงินลูกค้าผิดพลาด นำไปสู่การร้องเรียนและทำลายภาพลักษณ์ของร้าน
+> 3. **ข้อมูลรายงานสถิติของร้านพัง:** ยอดการเปิดโต๊ะและจำนวนบิลสะสมจะเพิ่มขึ้นเกินจริงในระบบรายงานผู้บริหาร ทำให้ข้อมูลบัญชีและสถิติยอดขายรายวันคลาดเคลื่อนไปจากความเป็นจริงอย่างมาก
 
 ---
 
@@ -586,7 +587,7 @@ cd frontend && npm audit --audit-level=moderate
 
 ```bash
 # 1. Clone Repository
-git clone https://github.com/[รหัสนักศึกษา]/Restaurant-Management-System-Exam-2025.git
+git clone https://github.com/wanitcha-jabprang/Restaurant-Management-System-Exam-2025.git
 cd Restaurant-Management-System-Exam-2025
 
 # 2. ตั้งค่า Environment Variables (Backend)
@@ -614,8 +615,8 @@ cd frontend && npm install && npm run dev
 
 | Service | Port ที่รันจริง | ค่า CORS_ORIGIN ที่ตั้ง | ค่า VITE_API_URL ที่ตั้ง |
 |---------|---------------|------------------------|------------------------|
-| Backend API | | | — |
-| Frontend | | — | |
+| Backend API |3001|http://localhost:5173| — |
+| Frontend |5173| — |http://localhost:3001|
 
 #### ผล Smoke Test — On-Premises
 
@@ -623,18 +624,18 @@ cd frontend && npm install && npm run dev
 
 | ทดสอบ | URL | ผลลัพธ์ที่คาดหวัง | ผ่าน/ไม่ผ่าน |
 |-------|-----|-----------------|-------------|
-| Backend Health Check | `http://localhost:[port]/api/health` | `{"status":"ok"}` | ☐ |
-| Frontend Login | `http://localhost:5173` | หน้า Login แสดงผลสำเร็จ | ☐ |
+| Backend Health Check | `http://localhost:[port]/api/health` | `{"status":"ok"}` | ✅ |
+| Frontend Login | `http://localhost:5173` | หน้า Login แสดงผลสำเร็จ | ✅ |
 
 #### หลักฐาน On-Premises
 
 **รูปที่ 8 — Backend Health Check (`/api/health` ตอบ `{"status":"ok"}`)**
 
-`![On-Premises Backend Health](./tests/reports/onprem-backend-health.png)`
+![On-Premises Backend Health](./tests/reports/onprem-backend-health.png)
 
 **รูปที่ 9 — Frontend Login สำเร็จ**
 
-`![On-Premises Frontend Login](./tests/reports/onprem-frontend-login.png)`
+![On-Premises Frontend Login](./tests/reports/onprem-frontend-login.png)
 
 ---
 
@@ -645,10 +646,10 @@ cd frontend && npm install && npm run dev
 
 **✏️ ทำเครื่องหมาย ✅ เมื่อแก้ไขเสร็จแล้ว**
 
-- [ ] เพิ่ม Environment Variables ครบถ้วน (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `VITE_API_URL`)
-- [ ] กำหนด Port Mapping: backend → 3001, frontend → 80
-- [ ] เพิ่ม Health Check สำหรับ backend service
-- [ ] กำหนด `depends_on` ให้ frontend รอ backend พร้อมก่อน
+- [✅] เพิ่ม Environment Variables ครบถ้วน (`DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `VITE_API_URL`)
+- [✅] กำหนด Port Mapping: backend → 3001, frontend → 80
+- [✅] เพิ่ม Health Check สำหรับ backend service
+- [✅] กำหนด `depends_on` ให้ frontend รอ backend พร้อมก่อน
 
 #### Environment Variables ที่ตั้งค่าจริงใน `docker-compose.yml` (Rubric 2.2 ข้อ 2)
 
@@ -656,11 +657,11 @@ cd frontend && npm install && npm run dev
 
 | Variable | Service | ค่าที่ตั้งจริง |
 |----------|---------|--------------|
-| `DATABASE_URL` | backend | |
+| `DATABASE_URL` | backend |postgres://postgres:postgres@db:5432/rms_db|
 | `JWT_SECRET` | backend | (ตั้งค่าแล้ว — ไม่ระบุค่าจริงเพื่อความปลอดภัย) |
-| `CORS_ORIGIN` | backend | |
-| `NODE_ENV` | backend | |
-| `VITE_API_URL` | frontend | |
+| `CORS_ORIGIN` | backend |${CORS_ORIGIN:-http://localhost:5173}|
+| `NODE_ENV` | backend |production|
+| `VITE_API_URL` | frontend |/api|
 
 #### Multi-stage Build (Rubric 2.5 ข้อ 2)
 
@@ -668,8 +669,8 @@ cd frontend && npm install && npm run dev
 
 | Service | มี Multi-stage Build | Stage ที่ใช้ (เช่น builder → runner) |
 |---------|--------------------|------------------------------------|
-| Backend | ☐ มี / ☐ ไม่มี | |
-| Frontend | ☐ มี / ☐ ไม่มี | |
+| **Backend** | ☑ มี / ☐ ไม่มี | `deps` ➔ `builder` ➔ `runner` |
+| **Frontend** | ☑ มี / ☐ ไม่มี | `builder` ➔ `runner` (`nginx:alpine`) |
 
 **รูปที่ 10 — Dockerfile แสดง Multi-stage build**
 
@@ -681,7 +682,7 @@ cd frontend && npm install && npm run dev
 
 | Volume Name / Path | Host Path | Container Path | วัตถุประสงค์ |
 |-------------------|-----------|----------------|-------------|
-| | | | |
+| `postgres_data` | บริหารจัดการโดย Docker Engine  | `/var/lib/postgresql/data` | ใช้สำหรับเก็บข้อมูลของฐานข้อมูล PostgreSQL แบบถาวร (Data Persistence) เพื่อไม่ให้ข้อมูลเมนูอาหาร ออเดอร์ และบัญชีผู้ใช้งานสูญหายเมื่อตู้คอนเทนเนอร์ถูกปิดหรือลบออก |
 
 #### Network Configuration (Rubric 2.5 ข้อ 5)
 
@@ -689,7 +690,7 @@ cd frontend && npm install && npm run dev
 
 | Network Name | Driver | Services ที่อยู่ใน Network นี้ |
 |-------------|--------|-------------------------------|
-| | | |
+| `default` (ระบบสร้างให้อัตโนมัติ) | `bridge` | `db`, `backend`, `frontend` |
 
 #### คำสั่งรัน Staging
 
@@ -703,14 +704,14 @@ docker compose up --build
 
 | ทดสอบ | URL | ผลลัพธ์ที่คาดหวัง | ผ่าน/ไม่ผ่าน |
 |-------|-----|-----------------|-------------|
-| Backend Health Check | `http://localhost:3001/api/health` | `{"status":"ok"}` | ☐ |
-| Frontend | `http://localhost:80` | หน้า Login แสดงผลสำเร็จ | ☐ |
+| Backend Health Check | `http://localhost:3001/api/health` | `{"status":"ok"}` | ✅ |
+| Frontend | `http://localhost:80` | หน้า Login แสดงผลสำเร็จ | ✅ |
 
 #### หลักฐาน Staging
 
 **รูปที่ 11 — `docker compose ps` แสดงทุก Container สถานะ `running`**
 
-`![Docker Compose PS](./tests/reports/staging-docker-ps.png)`
+![Docker Compose PS](./tests/reports/staging-docker-ps.png)
 
 ---
 
@@ -724,7 +725,7 @@ docker compose up --build
 
 **✏️ Connection String ที่ใช้จริง (เบลอ password ก่อนบันทึก):**
 
-`postgresql://[user]:***@[host].neon.tech/[db]?sslmode=require`
+postgresql://neondb_owner:***@ep-fragrant-wind-ao048dp8-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 
 ---
 
@@ -760,11 +761,11 @@ Build Command:  npm run build
 | Variable | Service | ค่าที่ตั้งจริงบน Cloud |
 |----------|---------|----------------------|
 | `PORT` | Backend (Render) | `10000` |
-| `DATABASE_URL` | Backend (Render) | |
+| `DATABASE_URL` | Backend (Render) |postgresql://rms_db_ten0_user:9jaLH9RIPnauUcLvJdvo4rC2RlQQPZZk@dpg-d8cnmmp9rddc73dei8rg-a/rms_db_ten0|
 | `JWT_SECRET` | Backend (Render) | (ตั้งค่าแล้ว — ไม่ระบุ) |
-| `CORS_ORIGIN` | Backend (Render) | `https://[ชื่อ app ของตนเอง].vercel.app` |
+| `CORS_ORIGIN` | Backend (Render) | `https://restaurant-management-system-exam-2-theta.vercel.app` |
 | `NODE_ENV` | Backend (Render) | `production` |
-| `VITE_API_URL` | Frontend (Vercel) | `https://[ชื่อ api ของตนเอง].onrender.com` |
+| `VITE_API_URL` | Frontend (Vercel) | `https://rms-backend-47sv.onrender.com` |
 
 ---
 
@@ -775,7 +776,7 @@ Build Command:  npm run build
 
 | # | Feature | ขั้นตอนทดสอบ | ผลลัพธ์ที่คาดหวัง | ผ่าน/ไม่ผ่าน |
 |---|---------|------------|-----------------|-------------|
-| 1 | Health Check | GET `/api/health` | `{"status":"ok"}` | ☐ |
+| 1 | Health Check | GET `/api/health` | `{"status":"ok"}` | ✅ |
 | 2 | Login | Login ด้วย admin บน Frontend URL | เข้าระบบสำเร็จ | ☐ |
 | 3 | Open Order & Add Item | เปิดโต๊ะ → เพิ่มสินค้า → Confirm | ออเดอร์ถูกบันทึก | ☐ |
 | 4 | Payment | ชำระเงิน → ตรวจสอบ change | คำนวณเงินทอนถูกต้อง | ☐ |
@@ -784,19 +785,19 @@ Build Command:  npm run build
 
 **รูปที่ 12 — Smoke Test Feature 1: Health Check**
 
-`![Smoke Test Health](./tests/reports/smoke-1-health.png)`
+![Smoke Test Health](./tests/reports/smoke-1-health.png)
 
 **รูปที่ 13 — Smoke Test Feature 2: Login**
 
-`![Smoke Test Login](./tests/reports/smoke-2-login.png)`
+![Smoke Test Login](./tests/reports/smoke-2-login.png)
 
 **รูปที่ 14 — Smoke Test Feature 3: Open Order**
 
-`![Smoke Test Order](./tests/reports/smoke-3-order.png)`
+![Smoke Test Order](./tests/reports/smoke-3-order.png)
 
 **รูปที่ 15 — Smoke Test Feature 4: Payment**
 
-`![Smoke Test Payment](./tests/reports/smoke-4-payment.png)`
+![Smoke Test Payment](./tests/reports/smoke-4-payment.png)
 
 ---
 
