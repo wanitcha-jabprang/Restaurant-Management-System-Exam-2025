@@ -14,7 +14,8 @@ on:
 # Environment Variables ระดับ Global
 # ===================================================
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "24" # 👈 [อัปเดต 2026] ยกระดับรองรับมาตรฐานใหม่ของ GitHub Actions
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ─────────────────────────────────────────────────
@@ -31,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: |
             backend/package-lock.json
@@ -98,7 +99,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
@@ -146,7 +147,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20" # 👈 บล็อกไม่ให้รันเนอร์ดีดไปเวอร์ชัน 22
+          node-version: "24"
 
       - name: Trigger Render Deploy Hook
         run: |
@@ -160,18 +161,18 @@ jobs:
       - name: Wait for Render deployment to complete
         run: |
           echo "⏳ Waiting 3 minutes for Render to deploy..."
-          sleep 30
+          sleep 180
 
       - name: Verify Backend is alive (Health Check)
         run: |
           echo "🔍 Checking backend health..."
-          # 💡 [แก้ไข] เปลี่ยนจาก BACKEND_URL เป็น RENDER_BACKEND_URL ให้ตรงกับตาราง Secrets ของคุณ
-          # เผื่อระบบดึงค่าไม่สำเร็จ แนะนำให้เปลี่ยนครอบทั้งเครือข่าย "${{ secrets.RENDER_BACKEND_URL }}/api/health" 
-          # หรือใส่ลิงก์ตรงของคุณลงไปแทนได้เลยครับ เช่น "https://rms-backend-47sv.onrender.com/api/health"
           
           TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
           if [ -z "$TARGET_URL" ]; then
             TARGET_URL="${{ secrets.BACKEND_URL }}"
+          fi
+          if [ -z "$TARGET_URL" ]; then
+            TARGET_URL="https://rms-backend-47sv.onrender.com"
           fi
           
           for i in {1..10}; do
@@ -203,7 +204,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
@@ -240,7 +241,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install Newman and HTML reporter
         run: npm install --global newman newman-reporter-htmlextra
@@ -254,7 +255,7 @@ jobs:
             "name": "RMS Production Environment",
             "values": [
               { "key": "base_url", "value": "${{ secrets.RENDER_BACKEND_URL }}", "enabled": true },
-              { "key": "frontend_url", "value": "${{ secrets.FRONTEND_URL }}", "enabled": true },
+              { "key": "frontend_url", "value": "https://restaurant-management-system-exam-2025-g1p8fekqo.vercel.app", "enabled": true },
               { "key": "admin_username", "value": "admin", "enabled": true },
               { "key": "admin_password", "value": "${{ secrets.ADMIN_PASSWORD }}", "enabled": true },
               { "key": "token", "value": "", "enabled": true },
@@ -317,14 +318,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       # ── Smoke Test 1: Backend Health Check ──
       - name: "[ST-01] Backend Health Check"
         id: smoke_health
         run: |
-          echo "🔍 Testing: GET ${{ secrets.RENDER_BACKEND_URL }}/api/health"
-          RESPONSE=$(curl --silent --fail "${{ secrets.RENDER_BACKEND_URL }}/api/health")
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
+          echo "🔍 Testing: GET $TARGET_URL/api/health"
+          RESPONSE=$(curl --silent --fail "$TARGET_URL/api/health")
           STATUS=$(echo "$RESPONSE" | jq -r '.status')
           if [ "$STATUS" = "ok" ]; then
             echo "✅ PASS — Health Check: $RESPONSE"
@@ -337,9 +342,13 @@ jobs:
       - name: "[ST-02] Admin Login via API"
         id: smoke_login
         run: |
-          echo "🔍 Testing: POST ${{ secrets.RENDER_BACKEND_URL }}/api/auth/login"
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
+          echo "🔍 Testing: POST $TARGET_URL/api/auth/login"
           RESPONSE=$(curl --silent --fail \
-            -X POST "${{ secrets.RENDER_BACKEND_URL }}/api/auth/login" \
+            -X POST "$TARGET_URL/api/auth/login" \
             -H "Content-Type: application/json" \
             -d "{\"username\": \"admin\", \"password\": \"Admin@123\"}")
           TOKEN=$(echo "$RESPONSE" | jq -r '.token // .accessToken // empty')
@@ -355,9 +364,13 @@ jobs:
       - name: "[ST-03] Open Table and Create Order"
         id: smoke_order
         run: |
-          echo "🔍 Testing: POST ${{ secrets.RENDER_BACKEND_URL }}/api/orders"
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
+          echo "🔍 Testing: POST $TARGET_URL/api/orders"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-            -X POST "${{ secrets.RENDER_BACKEND_URL }}/api/orders" \
+            -X POST "$TARGET_URL/api/orders" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ env.SMOKE_TOKEN }}" \
             -d '{"tableNumber": 99, "items": []}')
@@ -372,16 +385,20 @@ jobs:
       - name: "[ST-04] Payment Endpoint Responsive"
         id: smoke_payment
         run: |
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
           echo "🔍 Testing: Payment endpoint exists and is reachable"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-            -X POST "${{ secrets.RENDER_BACKEND_URL }}/api/payments" \
+            -X POST "$TARGET_URL/api/payments" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ env.SMOKE_TOKEN }}" \
             -d '{"orderId": "nonexistent-test"}')
           if [[ "$HTTP_STATUS" =~ ^(400|404|422|200)$ ]]; then
             echo "✅ PASS — Payment endpoint responsive (HTTP $HTTP_STATUS)"
           else
-            echo "❌ FAIL — HTTP $HTTP_STATUS (possible 401 auth issue or 500 server error)"
+            echo "❌ FAIL — HTTP $HTTP_STATUS"
             exit 1
           fi
 
@@ -389,9 +406,12 @@ jobs:
       - name: "[ST-05] Frontend Accessible (Vercel)"
         id: smoke_frontend
         run: |
-          echo "🔍 Testing: GET ${{ secrets.FRONTEND_URL }}"
+          # 💡 [แก้ไขสำเร็จ] วิ่งตรงไปยัง Vercel URL ที่ส่งมา ล็อกเป้าหมายแม่นยำ
+          TARGET_FRONTEND="https://restaurant-management-system-exam-2025-g1p8fekqo.vercel.app"
+          
+          echo "🔍 Testing: GET $TARGET_FRONTEND"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-            --max-time 30 "${{ secrets.FRONTEND_URL }}")
+            --max-time 30 "$TARGET_FRONTEND")
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "✅ PASS — Frontend is accessible (HTTP $HTTP_STATUS)"
           else
@@ -403,13 +423,17 @@ jobs:
       - name: "[ST-06] Security — Reject request without JWT"
         id: smoke_security
         run: |
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
           echo "🔍 Testing: Protected endpoint must reject unauthenticated request"
           HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-            "${{ secrets.RENDER_BACKEND_URL }}/api/orders")
+            "$TARGET_URL/api/orders")
           if [ "$HTTP_STATUS" = "401" ]; then
             echo "✅ PASS — Unauthenticated request rejected with HTTP 401"
           else
-            echo "❌ FAIL — Expected 401 but got HTTP $HTTP_STATUS (Security issue!)"
+            echo "❌ FAIL — Expected 401 but got HTTP $HTTP_STATUS"
             exit 1
           fi
 
@@ -417,6 +441,10 @@ jobs:
       - name: Smoke Test Summary
         if: always()
         run: |
+          TARGET_URL="${{ secrets.RENDER_BACKEND_URL }}"
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="${{ secrets.BACKEND_URL }}"; fi
+          if [ -z "$TARGET_URL" ]; then TARGET_URL="https://rms-backend-47sv.onrender.com"; fi
+          
           echo ""
           echo "════════════════════════════════════════"
           echo "    🚬 SMOKE TEST SUMMARY"
@@ -428,6 +456,6 @@ jobs:
           echo "ST-05 Frontend Access  : ${{ steps.smoke_frontend.outcome == 'success' && '✅ PASS' || '❌ FAIL' }}"
           echo "ST-06 Auth Security    : ${{ steps.smoke_security.outcome == 'success' && '✅ PASS' || '❌ FAIL' }}"
           echo "════════════════════════════════════════"
-          echo "Backend  : ${{ secrets.RENDER_BACKEND_URL }}"
-          echo "Frontend : ${{ secrets.FRONTEND_URL }}"
+          echo "Backend  : $TARGET_URL"
+          echo "Frontend : https://restaurant-management-system-exam-2025-g1p8fekqo.vercel.app"
           echo "════════════════════════════════════════"
