@@ -76,7 +76,7 @@ jobs:
         id: newman
         run: |
           mkdir -p tests/reports
-          newman run tests/postman/RMS-TestSuite.json \
+          newman run tests/postman/RMS-[68030251]-TestSuite.json \
             --environment tests/postman/env.json \
             --reporters cli,htmlextra,json \
             --reporter-htmlextra-export tests/reports/newman-report.html \
